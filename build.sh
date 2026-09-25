@@ -391,7 +391,10 @@ build_aom() {
         -DENABLE_DOCS=OFF
         -DCMAKE_C_FLAGS="$CFLAGS -static-libgcc"
         -DCMAKE_CXX_FLAGS="$CXXFLAGS -static-libgcc -static-libstdc++"
-        -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+        # Re-add $LDFLAGS (carries -no-pie on arm64) since an explicit
+        # CMAKE_EXE_LINKER_FLAGS overrides CMake's own env LDFLAGS seeding,
+        # otherwise try_compile checks mismatch the -fno-PIE compile flags.
+        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -static-libgcc -static-libstdc++"
     )
 
     if [ "$TARGET_ARCH" = "armv7" ]; then
@@ -470,7 +473,12 @@ build_x265() {
         -DENABLE_LIBNUMA=OFF
         -DCMAKE_C_FLAGS="$CFLAGS -static-libgcc"
         -DCMAKE_CXX_FLAGS="$CXXFLAGS -static-libgcc -static-libstdc++"
-        -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+        # Explicit CMAKE_EXE_LINKER_FLAGS overrides the env LDFLAGS that CMake
+        # would otherwise seed it with, so re-add $LDFLAGS (carries -no-pie on
+        # arm64) here too; otherwise try_compile checks like strtok_r detection
+        # mismatch the -fno-PIE compile flags and fail to link, producing a
+        # false "not found" that later conflicts with glibc's real declaration.
+        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -static-libgcc -static-libstdc++"
     )
 
     if [ -n "${TARGET_TRIPLET:-}" ]; then
@@ -727,13 +735,20 @@ build_ffmpeg() {
 
     rm -rf "$PREFIX/ffmpeg"
 
+    # PIE + fully static linking overflows the aarch64 GOT page range
+    # (R_AARCH64_LD64_GOTPAGE_LO15), so force a non-PIE final link there.
+    local no_pie_ldflag=""
+    if [ "$TARGET_ARCH" = "arm64" ]; then
+        no_pie_ldflag=" -no-pie"
+    fi
+
     local configure_args=(
         --prefix="$PREFIX/ffmpeg"
         --pkg-config-flags=--static
         --pkg-config=pkg-config
         --extra-cflags="-I$PREFIX/include"
         --extra-cxxflags="-I$PREFIX/include"
-        --extra-ldflags="-L$PREFIX/lib -static"
+        --extra-ldflags="-L$PREFIX/lib -static${no_pie_ldflag}"
         --extra-libs="-lpthread -lm -ldl"
         --ld="${CXX:-g++}"
         --cc="${CC:-gcc}"
@@ -1029,7 +1044,9 @@ main() {
             fi
             ;;
         arm64)
-            arch_cflags="-march=armv8-a"
+            # Distro gcc defaults to PIE, which blows past the aarch64 GOT
+            # page range (R_AARCH64_LD64_GOTPAGE_LO15) once fully static.
+            arch_cflags="-march=armv8-a -fno-PIE"
             ;;
         armv7)
             arch_cflags="-march=armv7-a"
@@ -1043,7 +1060,15 @@ main() {
 
     export CFLAGS="-O2 $arch_cflags"
     export CXXFLAGS="-O2 $arch_cflags"
-    log_info "Compiler baseline flags: CFLAGS='$CFLAGS' CXXFLAGS='$CXXFLAGS'"
+
+    # Objects compiled with -fno-PIE must also be linked non-PIE, otherwise
+    # dependency test/helper executables (e.g. libogg's test_bitwise) fail
+    # with "relocation ... can not be used when making a shared object".
+    if [ "$TARGET_ARCH" = "arm64" ]; then
+        export LDFLAGS="$LDFLAGS -no-pie"
+    fi
+
+    log_info "Compiler baseline flags: CFLAGS='$CFLAGS' CXXFLAGS='$CXXFLAGS' LDFLAGS='$LDFLAGS'"
 
     CURRENT_ARCH=$(uname -m)
     if [ "$CURRENT_ARCH" = "x86_64" ] && [ "$TARGET_ARCH" = "arm64" ]; then
