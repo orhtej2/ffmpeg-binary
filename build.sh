@@ -391,7 +391,10 @@ build_aom() {
         -DENABLE_DOCS=OFF
         -DCMAKE_C_FLAGS="$CFLAGS -static-libgcc"
         -DCMAKE_CXX_FLAGS="$CXXFLAGS -static-libgcc -static-libstdc++"
-        -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+        # Re-add $LDFLAGS (carries -no-pie on arm64) since an explicit
+        # CMAKE_EXE_LINKER_FLAGS overrides CMake's own env LDFLAGS seeding,
+        # otherwise try_compile checks mismatch the -fno-PIE compile flags.
+        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -static-libgcc -static-libstdc++"
     )
 
     if [ "$TARGET_ARCH" = "armv7" ]; then
@@ -470,7 +473,12 @@ build_x265() {
         -DENABLE_LIBNUMA=OFF
         -DCMAKE_C_FLAGS="$CFLAGS -static-libgcc"
         -DCMAKE_CXX_FLAGS="$CXXFLAGS -static-libgcc -static-libstdc++"
-        -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+        # Explicit CMAKE_EXE_LINKER_FLAGS overrides the env LDFLAGS that CMake
+        # would otherwise seed it with, so re-add $LDFLAGS (carries -no-pie on
+        # arm64) here too; otherwise try_compile checks like strtok_r detection
+        # mismatch the -fno-PIE compile flags and fail to link, producing a
+        # false "not found" that later conflicts with glibc's real declaration.
+        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -static-libgcc -static-libstdc++"
     )
 
     if [ -n "${TARGET_TRIPLET:-}" ]; then
