@@ -217,7 +217,9 @@ install_dependencies() {
         python3-venv \
         ninja-build \
         meson \
-        texinfo
+        texinfo \
+        gperf \
+        gettext
 
     log_info "Build dependencies installed successfully"
 }
@@ -373,19 +375,31 @@ build_aom() {
     rm -rf aom_build
     mkdir -p aom_build
     cd aom_build
-    cmake -G "Unix Makefiles" \
-        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DBUILD_SHARED_LIBS=OFF \
-        -DENABLE_TESTS=OFF \
-        -DENABLE_EXAMPLES=OFF \
-        -DENABLE_TOOLS=OFF \
-        -DENABLE_DOCS=OFF \
-        -DENABLE_NASM=ON \
-        -DCMAKE_C_FLAGS="$CFLAGS -static-libgcc" \
-        -DCMAKE_CXX_FLAGS="$CXXFLAGS -static-libgcc -static-libstdc++" \
-        -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
-        ../aom
+
+    # Without an explicit toolchain file, CMake assumes the target processor
+    # matches the build host (x86_64) even though CC/CXX point at the arm
+    # cross-compiler, so aom's x86-only SIMD flags get required incorrectly.
+    local aom_cmake_args=(
+        -G "Unix Makefiles"
+        -DCMAKE_INSTALL_PREFIX="$PREFIX"
+        -DCMAKE_BUILD_TYPE=Release
+        -DBUILD_SHARED_LIBS=OFF
+        -DENABLE_TESTS=OFF
+        -DENABLE_EXAMPLES=OFF
+        -DENABLE_TOOLS=OFF
+        -DENABLE_DOCS=OFF
+        -DCMAKE_C_FLAGS="$CFLAGS -static-libgcc"
+        -DCMAKE_CXX_FLAGS="$CXXFLAGS -static-libgcc -static-libstdc++"
+        -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+    )
+
+    if [ "$TARGET_ARCH" = "armv7" ]; then
+        aom_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="../aom/build/cmake/toolchains/armv7-linux-gcc.cmake")
+    else
+        aom_cmake_args+=(-DENABLE_NASM=ON)
+    fi
+
+    cmake "${aom_cmake_args[@]}" ../aom
     cmake --build . --parallel "$BUILD_JOBS"
     cmake --install .
     cd ..
