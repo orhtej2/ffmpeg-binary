@@ -485,6 +485,22 @@ build_x265() {
         )
     fi
 
+    if [ "$TARGET_ARCH" = "arm64" ]; then
+        # By default x265 enables runtime CPU dispatch for every aarch64 SIMD
+        # extension (dotprod/i8mm/sve/sve2), which bakes in "-march=armv9-a+..."
+        # combinations that older/generic GCC toolchains reject. Keep only
+        # baseline NEON (mandatory on armv8-a, matches Debian's generic aarch64
+        # baseline) for a portable build across all arm64 hardware.
+        x265_cmake_args+=(
+            -DAARCH64_RUNTIME_CPU_DETECT=OFF
+            -DENABLE_NEON_DOTPROD=OFF
+            -DENABLE_NEON_I8MM=OFF
+            -DENABLE_SVE=OFF
+            -DENABLE_SVE2=OFF
+            -DENABLE_SVE2_BITPERM=OFF
+        )
+    fi
+
     cmake "${x265_cmake_args[@]}" ../../../source
     cmake --build . --parallel "$BUILD_JOBS"
     cmake --install .
