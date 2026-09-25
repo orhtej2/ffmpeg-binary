@@ -1052,7 +1052,15 @@ main() {
 
     export CFLAGS="-O2 $arch_cflags"
     export CXXFLAGS="-O2 $arch_cflags"
-    log_info "Compiler baseline flags: CFLAGS='$CFLAGS' CXXFLAGS='$CXXFLAGS'"
+
+    # Objects compiled with -fno-PIE must also be linked non-PIE, otherwise
+    # dependency test/helper executables (e.g. libogg's test_bitwise) fail
+    # with "relocation ... can not be used when making a shared object".
+    if [ "$TARGET_ARCH" = "arm64" ]; then
+        export LDFLAGS="$LDFLAGS -no-pie"
+    fi
+
+    log_info "Compiler baseline flags: CFLAGS='$CFLAGS' CXXFLAGS='$CXXFLAGS' LDFLAGS='$LDFLAGS'"
 
     CURRENT_ARCH=$(uname -m)
     if [ "$CURRENT_ARCH" = "x86_64" ] && [ "$TARGET_ARCH" = "arm64" ]; then
