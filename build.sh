@@ -727,13 +727,20 @@ build_ffmpeg() {
 
     rm -rf "$PREFIX/ffmpeg"
 
+    # PIE + fully static linking overflows the aarch64 GOT page range
+    # (R_AARCH64_LD64_GOTPAGE_LO15), so force a non-PIE final link there.
+    local no_pie_ldflag=""
+    if [ "$TARGET_ARCH" = "arm64" ]; then
+        no_pie_ldflag=" -no-pie"
+    fi
+
     local configure_args=(
         --prefix="$PREFIX/ffmpeg"
         --pkg-config-flags=--static
         --pkg-config=pkg-config
         --extra-cflags="-I$PREFIX/include"
         --extra-cxxflags="-I$PREFIX/include"
-        --extra-ldflags="-L$PREFIX/lib -static"
+        --extra-ldflags="-L$PREFIX/lib -static${no_pie_ldflag}"
         --extra-libs="-lpthread -lm -ldl"
         --ld="${CXX:-g++}"
         --cc="${CC:-gcc}"
@@ -1029,7 +1036,9 @@ main() {
             fi
             ;;
         arm64)
-            arch_cflags="-march=armv8-a"
+            # Distro gcc defaults to PIE, which blows past the aarch64 GOT
+            # page range (R_AARCH64_LD64_GOTPAGE_LO15) once fully static.
+            arch_cflags="-march=armv8-a -fno-PIE"
             ;;
         armv7)
             arch_cflags="-march=armv7-a"
