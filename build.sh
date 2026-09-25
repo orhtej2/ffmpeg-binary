@@ -461,16 +461,31 @@ build_x265() {
     # x265 is C++; without forcing static libgcc/libstdc++ here, the CMake-detected
     # implicit link libraries bake a "-lgcc_s" (shared-only) reference into x265.pc,
     # which breaks ffmpeg's fully static (-static) link.
-    cmake -G "Unix Makefiles" \
-        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DENABLE_SHARED=OFF \
-        -DENABLE_CLI=OFF \
-        -DENABLE_LIBNUMA=OFF \
-        -DCMAKE_C_FLAGS="$CFLAGS -static-libgcc" \
-        -DCMAKE_CXX_FLAGS="$CXXFLAGS -static-libgcc -static-libstdc++" \
-        -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
-        ../../../source
+    local x265_cmake_args=(
+        -G "Unix Makefiles"
+        -DCMAKE_INSTALL_PREFIX="$PREFIX"
+        -DCMAKE_BUILD_TYPE=Release
+        -DENABLE_SHARED=OFF
+        -DENABLE_CLI=OFF
+        -DENABLE_LIBNUMA=OFF
+        -DCMAKE_C_FLAGS="$CFLAGS -static-libgcc"
+        -DCMAKE_CXX_FLAGS="$CXXFLAGS -static-libgcc -static-libstdc++"
+        -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+    )
+
+    if [ -n "${TARGET_TRIPLET:-}" ]; then
+        # Without CMAKE_SYSTEM_PROCESSOR, x265 assumes the host arch (x86_64) and
+        # tries to build x86 NASM primitives even though we're cross-compiling to arm.
+        x265_cmake_args+=(
+            -DCMAKE_SYSTEM_NAME=Linux
+            -DCMAKE_SYSTEM_PROCESSOR=armv7
+            -DCMAKE_C_COMPILER="${CC}"
+            -DCMAKE_CXX_COMPILER="${CXX}"
+            -DENABLE_ASSEMBLY=OFF
+        )
+    fi
+
+    cmake "${x265_cmake_args[@]}" ../../../source
     cmake --build . --parallel "$BUILD_JOBS"
     cmake --install .
     cd ../../../..
