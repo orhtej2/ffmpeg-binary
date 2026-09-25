@@ -1,0 +1,98 @@
+name: PR Build Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-amd64:
+    name: build-amd64
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build FFmpeg for amd64
+        run: |
+          set -euxo pipefail
+          chmod +x ./build.sh
+          ./build.sh latest amd64
+
+  build-arm64:
+    name: build-arm64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build FFmpeg for arm64
+        run: |
+          set -euxo pipefail
+          chmod +x ./build.sh
+          ./build.sh latest arm64
+
+  build-armv7:
+    name: build-armv7
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install armv7 cross-toolchain
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-arm-linux-gnueabihf \
+            g++-arm-linux-gnueabihf \
+            libc6-dev-armhf-cross \
+            qemu-user-static
+
+      - name: Build FFmpeg for armv7
+        run: |
+          set -euxo pipefail
+          chmod +x ./build.sh
+          ./build.sh latest armv7
+
+  required-check:
+    name: required-check
+    if: always()
+    needs:
+      - build-amd64
+      - build-arm64
+      - build-armv7
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Verify architecture builds succeeded
+        run: |
+          set -euxo pipefail
+          if [ "${{ needs.build-amd64.result }}" != "success" ]; then
+            echo "amd64 build failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.build-arm64.result }}" != "success" ]; then
+            echo "arm64 build failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.build-armv7.result }}" != "success" ]; then
+            echo "armv7 build failed"
+            exit 1
+          fi
+
+          echo "All architecture builds passed"
