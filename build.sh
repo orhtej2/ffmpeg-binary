@@ -219,7 +219,8 @@ install_dependencies() {
         meson \
         texinfo \
         gperf \
-        gettext
+        gettext \
+        autopoint
 
     log_info "Build dependencies installed successfully"
 }
