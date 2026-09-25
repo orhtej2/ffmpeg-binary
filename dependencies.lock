@@ -5,22 +5,22 @@ ZLIB_REPO="https://github.com/madler/zlib.git"
 ZLIB_TAG="v1.3.2"
 
 LIBOGG_REPO="https://github.com/xiph/ogg.git"
-LIBOGG_TAG="v1.3.5"
+LIBOGG_TAG="v1.3.6"
 
 LIBVORBIS_REPO="https://github.com/xiph/vorbis.git"
 LIBVORBIS_TAG="v1.3.7"
 
 OPUS_REPO="https://github.com/xiph/opus.git"
-OPUS_TAG="v1.5.2"
+OPUS_TAG="v1.6.1"
 
 LAME_REPO="https://github.com/enzo1982/lame.git"
 LAME_TAG="RELEASE__4_0"
 
 LIBVPX_REPO="https://github.com/webmproject/libvpx.git"
-LIBVPX_TAG="v1.15.0"
+LIBVPX_TAG="v1.17.0"
 
 LIBAOM_REPO="https://aomedia.googlesource.com/aom"
-LIBAOM_TAG="v3.12.1"
+LIBAOM_TAG="v3.15.1"
 
 DAV1D_REPO="https://code.videolan.org/videolan/dav1d.git"
 DAV1D_TAG="1.5.4"
@@ -38,7 +38,7 @@ FREETYPE_REPO="https://github.com/freetype/freetype.git"
 FREETYPE_TAG="VER-2-14-3"
 
 HARFBUZZ_REPO="https://github.com/harfbuzz/harfbuzz.git"
-HARFBUZZ_TAG="11.5.0"
+HARFBUZZ_TAG="14.5.0"
 
 FRIBIDI_REPO="https://github.com/fribidi/fribidi.git"
 FRIBIDI_TAG="v1.0.17"
