@@ -398,7 +398,7 @@ build_aom() {
     )
 
     if [ "$TARGET_ARCH" = "armv7" ]; then
-        aom_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="../aom/build/cmake/toolchains/armv7-linux-gcc.cmake")
+        aom_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="../aom/cmake/toolchains/armv7-linux-gcc.cmake")
     else
         aom_cmake_args+=(-DENABLE_NASM=ON)
     fi
