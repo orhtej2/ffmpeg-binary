@@ -313,15 +313,13 @@ jobs:
             echo "Upstream FFmpeg release: [${RELEASE_TAG}](${FFMPEG_RELEASE_URL})"
             echo
             echo "Contains statically linked \`ffmpeg\` and \`ffprobe\` only, built with"
-            echo "\`--enable-gpl\`. See [dependencies.lock](../../blob/main/dependencies.lock) for the full build BOM."
-            echo
-            echo "## Build BOM"
-            echo
-            cat "$BOM_FILE"
+            echo "\`--enable-gpl\`. See [dependencies.lock](../../blob/main/dependencies.lock) or the"
+            echo "attached \`dependencies.bom.txt\` asset for the full build BOM."
           } > "$RELEASE_NOTES_FILE"
 
           ls -lh "$BOM_FILE"
           ls -lh "$RELEASE_NOTES_FILE"
+
 
       - name: Create release and upload artifacts
         env:
