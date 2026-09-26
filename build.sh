@@ -147,44 +147,41 @@ load_dependency_lock() {
     fi
 }
 
-# Downloads a tag/ref archive instead of cloning, since a full git clone pulls
-# far more history/objects than a release build needs. Archive URL layout
-# (and whether the tarball wraps content in a top-level directory) differs
-# per git host, so each is handled explicitly below.
-fetch_repo_archive() {
+checkout_repo_tag() {
+    local repo_dir="$1"
+    local repo_url="$2"
+    local repo_tag="$3"
+
+    if [ -d "$repo_dir/.git" ]; then
+        log_info "Updating $repo_dir to tag $repo_tag"
+        git -C "$repo_dir" remote set-url origin "$repo_url"
+        git -C "$repo_dir" fetch --depth 1 origin "refs/tags/$repo_tag:refs/tags/$repo_tag" || \
+            git -C "$repo_dir" fetch --depth 1 origin "$repo_tag"
+        git -C "$repo_dir" checkout -f "$repo_tag"
+        git -C "$repo_dir" reset --hard "$repo_tag"
+        git -C "$repo_dir" clean -fdx
+    else
+        rm -rf "$repo_dir"
+        log_info "Cloning $repo_dir at tag $repo_tag"
+        git clone --depth 1 --branch "$repo_tag" "$repo_url" "$repo_dir"
+    fi
+
+    git -C "$repo_dir" checkout -f "$repo_tag"
+}
+
+checkout_repo_ref() {
     local repo_dir="$1"
     local repo_url="$2"
     local repo_ref="$3"
 
-    local repo_path repo_host archive_url strip_components=1
-    repo_path="${repo_url#*://}"
-    repo_host="${repo_path%%/*}"
-    repo_path="${repo_path#*/}"
-    repo_path="${repo_path%.git}"
-
-    case "$repo_host" in
-        github.com)
-            archive_url="https://github.com/${repo_path}/archive/${repo_ref}.tar.gz"
-            ;;
-        *.googlesource.com)
-            # googlesource archives are unwrapped (no top-level directory).
-            archive_url="https://${repo_host}/${repo_path}/+archive/refs/tags/${repo_ref}.tar.gz"
-            strip_components=0
-            ;;
-        bitbucket.org)
-            archive_url="https://bitbucket.org/${repo_path}/get/${repo_ref}.tar.gz"
-            ;;
-        *)
-            # GitLab-compatible hosts (code.videolan.org, gitlab.freedesktop.org, ...)
-            local repo_name="${repo_path##*/}"
-            archive_url="https://${repo_host}/${repo_path}/-/archive/${repo_ref}/${repo_name}-${repo_ref}.tar.gz"
-            ;;
-    esac
-
-    log_info "Downloading $repo_dir ($repo_ref) tarball..."
     rm -rf "$repo_dir"
     mkdir -p "$repo_dir"
-    curl -fsSL --retry 3 "$archive_url" | tar -xz -C "$repo_dir" --strip-components="$strip_components"
+
+    git -C "$repo_dir" init >/dev/null
+    git -C "$repo_dir" remote add origin "$repo_url"
+    git -C "$repo_dir" fetch --depth 1 origin "$repo_ref"
+    git -C "$repo_dir" checkout -f FETCH_HEAD
+    git -C "$repo_dir" clean -fdx
 }
 
 # Function to install build dependencies
@@ -232,7 +229,7 @@ build_zlib() {
     log_info "Building zlib (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "zlib" "$ZLIB_REPO" "$ZLIB_TAG"
+    checkout_repo_tag "zlib" "$ZLIB_REPO" "$ZLIB_TAG"
 
     cd zlib
     CFLAGS="$CFLAGS -Wno-error" ./configure --static --prefix="$PREFIX" $(autotools_host_flags)
@@ -245,7 +242,7 @@ build_ogg() {
     log_info "Building libogg (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "ogg" "$LIBOGG_REPO" "$LIBOGG_TAG"
+    checkout_repo_tag "ogg" "$LIBOGG_REPO" "$LIBOGG_TAG"
 
     cd ogg
     if [ ! -f "configure" ]; then
@@ -266,7 +263,7 @@ build_vorbis() {
     log_info "Building libvorbis (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "vorbis" "$LIBVORBIS_REPO" "$LIBVORBIS_TAG"
+    checkout_repo_tag "vorbis" "$LIBVORBIS_REPO" "$LIBVORBIS_TAG"
 
     cd vorbis
     if [ ! -f "configure" ]; then
@@ -290,7 +287,7 @@ build_opus() {
     log_info "Building libopus (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "opus" "$OPUS_REPO" "$OPUS_TAG"
+    checkout_repo_tag "opus" "$OPUS_REPO" "$OPUS_TAG"
 
     cd opus
     if [ ! -f "configure" ]; then
@@ -313,7 +310,7 @@ build_lame() {
     log_info "Building libmp3lame (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "lame" "$LAME_REPO" "$LAME_TAG"
+    checkout_repo_tag "lame" "$LAME_REPO" "$LAME_TAG"
 
     cd lame
     if [ ! -f "configure" ]; then
@@ -336,7 +333,7 @@ build_vpx() {
     log_info "Building libvpx (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "libvpx" "$LIBVPX_REPO" "$LIBVPX_TAG"
+    checkout_repo_tag "libvpx" "$LIBVPX_REPO" "$LIBVPX_TAG"
 
     cd libvpx
     rm -rf build-static
@@ -374,7 +371,7 @@ build_aom() {
     log_info "Building libaom (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "aom" "$LIBAOM_REPO" "$LIBAOM_TAG"
+    checkout_repo_tag "aom" "$LIBAOM_REPO" "$LIBAOM_TAG"
 
     rm -rf aom_build
     mkdir -p aom_build
@@ -416,7 +413,7 @@ build_dav1d() {
     log_info "Building dav1d (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "dav1d" "$DAV1D_REPO" "$DAV1D_TAG"
+    checkout_repo_tag "dav1d" "$DAV1D_REPO" "$DAV1D_TAG"
 
     cd dav1d
     rm -rf build
@@ -440,7 +437,7 @@ build_x264() {
     log_info "Building x264 (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "x264" "$X264_REPO" "$X264_REF"
+    checkout_repo_ref "x264" "$X264_REPO" "$X264_REF"
 
     cd x264
     ./configure --prefix="$PREFIX" \
@@ -458,7 +455,7 @@ build_x265() {
     log_info "Building x265 (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "x265_git" "$X265_REPO" "$X265_TAG"
+    checkout_repo_tag "x265_git" "$X265_REPO" "$X265_TAG"
 
     cd x265_git/build/linux
     rm -rf static-build
@@ -522,7 +519,7 @@ build_expat() {
     log_info "Building expat (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "libexpat" "$EXPAT_REPO" "$EXPAT_TAG"
+    checkout_repo_tag "libexpat" "$EXPAT_REPO" "$EXPAT_TAG"
 
     cd libexpat/expat
     rm -rf build
@@ -551,7 +548,7 @@ build_freetype() {
 
     cd "$WORK_DIR"
 
-    fetch_repo_archive "freetype" "$FREETYPE_REPO" "$FREETYPE_TAG"
+    checkout_repo_tag "freetype" "$FREETYPE_REPO" "$FREETYPE_TAG"
 
     cd freetype
     # Clean previous build state so the second pass can pick up harfbuzz.
@@ -582,7 +579,7 @@ build_harfbuzz() {
     log_info "Building harfbuzz (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "harfbuzz" "$HARFBUZZ_REPO" "$HARFBUZZ_TAG"
+    checkout_repo_tag "harfbuzz" "$HARFBUZZ_REPO" "$HARFBUZZ_TAG"
 
     cd harfbuzz
     rm -rf build
@@ -613,7 +610,7 @@ build_fribidi() {
     log_info "Building fribidi (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "fribidi" "$FRIBIDI_REPO" "$FRIBIDI_TAG"
+    checkout_repo_tag "fribidi" "$FRIBIDI_REPO" "$FRIBIDI_TAG"
 
     cd fribidi
     rm -rf build
@@ -638,9 +635,10 @@ build_fontconfig() {
     log_info "Building fontconfig (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "fontconfig" "$FONTCONFIG_REPO" "$FONTCONFIG_TAG"
+    checkout_repo_tag "fontconfig" "$FONTCONFIG_REPO" "$FONTCONFIG_TAG"
 
     cd fontconfig
+    git clean -xdff
 
     if [ ! -f "configure" ]; then
         log_info "Generating fontconfig configure script..."
@@ -669,7 +667,7 @@ build_libass() {
     log_info "Building libass (static)..."
     cd "$WORK_DIR"
 
-    fetch_repo_archive "libass" "$LIBASS_REPO" "$LIBASS_TAG"
+    checkout_repo_tag "libass" "$LIBASS_REPO" "$LIBASS_TAG"
 
     cd libass
     if [ ! -f "configure" ]; then
@@ -688,57 +686,38 @@ build_libass() {
 }
 
 # Function to fetch and checkout FFmpeg source
-# Resolves the latest stable FFmpeg release tag via the GitHub API (or the
-# gh CLI, if installed) instead of a full clone/ls-remote, since FFmpeg is
-# hosted on GitHub.
-resolve_latest_ffmpeg_tag() {
-    local repo_slug="${FFMPEG_REPO#*://}"
-    repo_slug="${repo_slug#*/}"
-    repo_slug="${repo_slug%.git}"
-
-    local tag=""
-    if command -v gh &> /dev/null; then
-        tag=$(gh api "repos/${repo_slug}/tags" --paginate --jq '.[].name' 2>/dev/null | \
-            grep -E '^n[0-9]' | grep -Ev -- '-dev$|-rc[0-9]*$' | sort -V | tail -n 1)
-    fi
-
-    if [ -z "$tag" ]; then
-        local page=1
-        local page_tags all_tags=""
-        while [ "$page" -le 5 ]; do
-            page_tags=$(curl -fsSL -H "Accept: application/vnd.github+json" \
-                "https://api.github.com/repos/${repo_slug}/tags?per_page=100&page=${page}" | \
-                grep '"name"' | sed -E 's/.*"name": *"([^"]+)".*/\1/')
-            [ -z "$page_tags" ] && break
-            all_tags="$all_tags"$'\n'"$page_tags"
-            page=$((page + 1))
-        done
-        tag=$(printf '%s\n' "$all_tags" | grep -E '^n[0-9]' | grep -Ev -- '-dev$|-rc[0-9]*$' | sort -V | tail -n 1)
-    fi
-
-    printf '%s' "$tag"
-}
-
 fetch_ffmpeg() {
     local tag=$1
 
     log_info "Fetching FFmpeg source..."
 
-    cd "$WORK_DIR"
+    if [ -d "$WORK_DIR/FFmpeg" ]; then
+        log_info "Updating existing FFmpeg repository..."
+        cd "$WORK_DIR/FFmpeg"
+        git fetch --tags origin
+        cd "$WORK_DIR"
+    else
+        log_info "Cloning FFmpeg repository..."
+        cd "$WORK_DIR"
+        git clone "$FFMPEG_REPO" FFmpeg
+    fi
+
+    cd "$WORK_DIR/FFmpeg"
 
     if [ "$tag" = "latest" ]; then
         log_info "Resolving latest stable FFmpeg release tag..."
-        tag=$(resolve_latest_ffmpeg_tag)
+        tag=$(git tag --list 'n[0-9]*' | grep -Ev -- '-dev$|-rc[0-9]*$' | sort -V | tail -n 1)
         if [ -z "$tag" ]; then
             log_error "Unable to resolve latest FFmpeg release tag"
             exit 1
         fi
     fi
 
-    log_info "Downloading tag: $tag..."
-    fetch_repo_archive "FFmpeg" "$FFMPEG_REPO" "$tag"
+    log_info "Checking out tag: $tag..."
+    git checkout -f "$tag"
+    git clean -fdx
 
-    CHECKED_OUT_TAG="$tag"
+    CHECKED_OUT_TAG=$(git describe --tags 2>/dev/null || git rev-parse --short HEAD)
     log_info "Checked out: $CHECKED_OUT_TAG"
 
     cd "$WORK_DIR"
