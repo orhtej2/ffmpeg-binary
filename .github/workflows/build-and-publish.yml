@@ -73,11 +73,11 @@ jobs:
             exit 0
           fi
 
-          echo "Latest FFmpeg release: $RELEASE_TAG"
+          echo "Selected FFmpeg upstream release: $RELEASE_TAG"
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
-          if git rev-parse -q --verify "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "Tag $RELEASE_TAG already exists in this repo"
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists"
             if [ "$FORCE_BUILD" != "true" ]; then
               for asset_attempt in 1 2 3; do
                 if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' >/tmp/release-assets.txt 2>/tmp/gh_release_assets.err; then

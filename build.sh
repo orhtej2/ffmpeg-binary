@@ -688,13 +688,15 @@ build_libass() {
 # Function to fetch and checkout FFmpeg source
 fetch_ffmpeg() {
     local tag=$1
+    local tag_commit
 
     log_info "Fetching FFmpeg source..."
 
     if [ -d "$WORK_DIR/FFmpeg" ]; then
         log_info "Updating existing FFmpeg repository..."
         cd "$WORK_DIR/FFmpeg"
-        git fetch --tags origin
+        git remote set-url origin "$FFMPEG_REPO"
+        git fetch origin
         cd "$WORK_DIR"
     else
         log_info "Cloning FFmpeg repository..."
@@ -706,18 +708,27 @@ fetch_ffmpeg() {
 
     if [ "$tag" = "latest" ]; then
         log_info "Resolving latest stable FFmpeg release tag..."
-        tag=$(git tag --list 'n[0-9]*' | grep -Ev -- '-dev$|-rc[0-9]*$' | sort -V | tail -n 1)
+        tag=$(git ls-remote --tags --refs "$FFMPEG_REPO" 'refs/tags/n[0-9]*' | \
+            awk '{sub("refs/tags/", "", $2); print $2}' | \
+            grep -Ev -- '-dev$|-rc[0-9]*$' | sort -V | tail -n 1)
         if [ -z "$tag" ]; then
             log_error "Unable to resolve latest FFmpeg release tag"
             exit 1
         fi
     fi
 
+    git fetch --force origin "refs/tags/$tag:refs/tags/$tag"
     log_info "Checking out tag: $tag..."
     git checkout -f "$tag"
     git clean -fdx
 
-    CHECKED_OUT_TAG=$(git describe --tags 2>/dev/null || git rev-parse --short HEAD)
+    tag_commit=$(git rev-parse "${tag}^{commit}")
+    if [ "$(git rev-parse HEAD)" != "$tag_commit" ]; then
+        log_error "Checked-out FFmpeg commit does not match upstream tag $tag"
+        exit 1
+    fi
+
+    CHECKED_OUT_TAG="$tag"
     log_info "Checked out: $CHECKED_OUT_TAG"
 
     cd "$WORK_DIR"
