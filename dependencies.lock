@@ -32,13 +32,13 @@ X265_REPO="https://bitbucket.org/multicoreware/x265_git.git"
 X265_TAG="4.2"
 
 EXPAT_REPO="https://github.com/libexpat/libexpat.git"
-EXPAT_TAG="R_2_8_5"
+EXPAT_TAG="R_2_9_0"
 
 FREETYPE_REPO="https://github.com/freetype/freetype.git"
 FREETYPE_TAG="VER-2-14-3"
 
 HARFBUZZ_REPO="https://github.com/harfbuzz/harfbuzz.git"
-HARFBUZZ_TAG="14.5.1"
+HARFBUZZ_TAG="14.6.0"
 
 FRIBIDI_REPO="https://github.com/fribidi/fribidi.git"
 FRIBIDI_TAG="v1.0.17"
