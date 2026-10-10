@@ -20,7 +20,7 @@ LIBVPX_REPO="https://github.com/webmproject/libvpx.git"
 LIBVPX_TAG="v1.17.0"
 
 LIBAOM_REPO="https://aomedia.googlesource.com/aom"
-LIBAOM_TAG="v3.15.1"
+LIBAOM_TAG="v3.15.2"
 
 DAV1D_REPO="https://code.videolan.org/videolan/dav1d.git"
 DAV1D_TAG="1.5.4"
