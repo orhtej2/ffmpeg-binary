@@ -35,7 +35,7 @@ EXPAT_REPO="https://github.com/libexpat/libexpat.git"
 EXPAT_TAG="R_2_9_0"
 
 FREETYPE_REPO="https://github.com/freetype/freetype.git"
-FREETYPE_TAG="VER-2-14-3"
+FREETYPE_TAG="VER-2-15-0"
 
 HARFBUZZ_REPO="https://github.com/harfbuzz/harfbuzz.git"
 HARFBUZZ_TAG="14.6.0"
