@@ -38,7 +38,7 @@ FREETYPE_REPO="https://github.com/freetype/freetype.git"
 FREETYPE_TAG="VER-2-15-0"
 
 HARFBUZZ_REPO="https://github.com/harfbuzz/harfbuzz.git"
-HARFBUZZ_TAG="14.6.0"
+HARFBUZZ_TAG="15.0.0"
 
 FRIBIDI_REPO="https://github.com/fribidi/fribidi.git"
 FRIBIDI_TAG="v1.0.17"
