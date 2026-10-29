@@ -41,7 +41,7 @@ HARFBUZZ_REPO="https://github.com/harfbuzz/harfbuzz.git"
 HARFBUZZ_TAG="15.0.0"
 
 FRIBIDI_REPO="https://github.com/fribidi/fribidi.git"
-FRIBIDI_TAG="v1.0.17"
+FRIBIDI_TAG="v1.0.18"
 
 FONTCONFIG_REPO="https://gitlab.freedesktop.org/fontconfig/fontconfig.git"
 FONTCONFIG_TAG="2.18.3"
