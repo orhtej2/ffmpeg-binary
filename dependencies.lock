@@ -32,7 +32,7 @@ X265_REPO="https://bitbucket.org/multicoreware/x265_git.git"
 X265_TAG="4.2"
 
 EXPAT_REPO="https://github.com/libexpat/libexpat.git"
-EXPAT_TAG="R_2_9_0"
+EXPAT_TAG="R_2_10_0"
 
 FREETYPE_REPO="https://github.com/freetype/freetype.git"
 FREETYPE_TAG="VER-2-15-0"
