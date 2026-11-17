@@ -23,7 +23,7 @@ LIBAOM_REPO="https://aomedia.googlesource.com/aom"
 LIBAOM_TAG="v3.15.3"
 
 DAV1D_REPO="https://code.videolan.org/videolan/dav1d.git"
-DAV1D_TAG="1.5.4"
+DAV1D_TAG="1.5.5"
 
 X264_REPO="https://github.com/mirror/x264.git"
 X264_REF="c24e06c2e184345ceb33eb20a15d1024d9fd3497"
