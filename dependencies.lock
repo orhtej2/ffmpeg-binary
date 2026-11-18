@@ -44,7 +44,7 @@ FRIBIDI_REPO="https://github.com/fribidi/fribidi.git"
 FRIBIDI_TAG="v1.0.18"
 
 FONTCONFIG_REPO="https://gitlab.freedesktop.org/fontconfig/fontconfig.git"
-FONTCONFIG_TAG="2.18.3"
+FONTCONFIG_TAG="2.18.4"
 
 LIBASS_REPO="https://github.com/libass/libass.git"
 LIBASS_TAG="0.17.5"
